@@ -24,9 +24,9 @@ async function query(filterBy = { txt: '' }) {
 		const collection = await dbService.getCollection('entry')
 		var entryCursor = await collection.find(criteria, { sort })
 
-		if (filterBy.pageIdx !== undefined) {
-			entryCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
-		}
+		// if (filterBy.pageIdx !== undefined) {
+		// 	entryCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
+		// }
 
 		const entrys = entryCursor.toArray()
 		return entrys
@@ -53,13 +53,13 @@ async function getById(entryId) {
 
 async function remove(entryId) {
     const { loggedinUser } = asyncLocalStorage.getStore()
-    const { _id: ownerId, isAdmin } = loggedinUser
+    const { _id: ownerId } = loggedinUser
 
 	try {
         const criteria = { 
             _id: ObjectId.createFromHexString(entryId), 
         }
-        if(!isAdmin) criteria['owner._id'] = ownerId
+        criteria['by._id'] = ownerId
         
 		const collection = await dbService.getCollection('entry')
 		const res = await collection.deleteOne(criteria)
@@ -85,7 +85,7 @@ async function add(entry) {
 }
 
 async function update(entry) {
-    const entryToSave = { vendor: entry.vendor, speed: entry.speed }
+    const entryToSave = { txt: entry.txt}
 
     try {
         const criteria = { _id: ObjectId.createFromHexString(entry._id) }
@@ -131,8 +131,8 @@ async function removeEntryMsg(entryId, msgId) {
 
 function _buildCriteria(filterBy) {
     const criteria = {
-        vendor: { $regex: filterBy.txt, $options: 'i' },
-        speed: { $gte: filterBy.minSpeed },
+        txt: { $regex: filterBy.txt, $options: 'i' },
+        
     }
 
     return criteria

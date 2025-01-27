@@ -5,10 +5,10 @@ export async function getEntrys(req, res) {
 	try {
 		const filterBy = {
 			txt: req.query.txt || '',
-			minSpeed: +req.query.minSpeed || 0,
-            sortField: req.query.sortField || '',
-            sortDir: req.query.sortDir || 1,
-			pageIdx: req.query.pageIdx,
+			
+            // sortField: req.query.sortField || '',
+            // sortDir: req.query.sortDir || -1,
+			
 		}
 		const entrys = await entryService.query(filterBy)
 		res.json(entrys)
@@ -32,8 +32,10 @@ export async function getEntryById(req, res) {
 export async function addEntry(req, res) {
 	const { loggedinUser, body: entry } = req
 
+    console.log(entry.by);
+    
 	try {
-		entry.owner = loggedinUser
+		entry.by = loggedinUser
 		const addedEntry = await entryService.add(entry)
 		res.json(addedEntry)
 	} catch (err) {
@@ -44,9 +46,9 @@ export async function addEntry(req, res) {
 
 export async function updateEntry(req, res) {
 	const { loggedinUser, body: entry } = req
-    const { _id: userId, isAdmin } = loggedinUser
+    const { _id: userId } = loggedinUser
 
-    if(!isAdmin && entry.owner._id !== userId) {
+    if( entry.by._id !== userId) {
         res.status(403).send('Not your entry...')
         return
     }
