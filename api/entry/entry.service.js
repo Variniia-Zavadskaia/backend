@@ -5,7 +5,6 @@ import { makeId } from '../../services/util.service.js'
 import { dbService } from '../../services/db.service.js'
 import { asyncLocalStorage } from '../../services/als.service.js'
 
-const PAGE_SIZE = 3
 
 export const entryService = {
 	remove,
