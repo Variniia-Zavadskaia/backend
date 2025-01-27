@@ -7,7 +7,7 @@ export async function getEntrys(req, res) {
 			txt: req.query.txt || '',
 			
             // sortField: req.query.sortField || '',
-            // sortDir: req.query.sortDir || -1,
+            sortDir: req.query.sortDir || -1,
 			
 		}
 		const entrys = await entryService.query(filterBy)

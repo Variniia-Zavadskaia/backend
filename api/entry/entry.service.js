@@ -22,7 +22,9 @@ async function query(filterBy = { txt: '' }) {
         const sort = _buildSort(filterBy)
 
 		const collection = await dbService.getCollection('entry')
-		var entryCursor = await collection.find(criteria, { sort })
+		// var entryCursor = await collection.find(criteria, { sort })
+
+        var entryCursor = await collection.find().sort({_id:-1})
 
 		// if (filterBy.pageIdx !== undefined) {
 		// 	entryCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
