@@ -14,6 +14,7 @@ router.get('/', log, getEntrys)
 router.get('/:id', log, getEntryById)
 router.post('/', log, requireAuth, addEntry)
 router.put('/:id', requireAuth, updateEntry)
+// router.put('/:id/update', requireAuth, updateEntry)
 router.delete('/:id', requireAuth, removeEntry)
 // router.delete('/:id', requireAuth, requireAdmin, removeEntry)
 

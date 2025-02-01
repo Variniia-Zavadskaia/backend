@@ -5,142 +5,190 @@ import { makeId } from '../../services/util.service.js'
 import { dbService } from '../../services/db.service.js'
 import { asyncLocalStorage } from '../../services/als.service.js'
 
-
 export const entryService = {
-	remove,
-	query,
-	getById,
-	add,
-	update,
-	addEntryMsg,
-	removeEntryMsg,
+    remove,
+    query,
+    getById,
+    getOwner,
+    add,
+    updateFull,
+    update,
+    addEntryMsg,
+    removeEntryMsg,
 }
 
 async function query(filterBy = { txt: '' }) {
-	try {
+    try {
         const criteria = _buildCriteria(filterBy)
         const sort = _buildSort(filterBy)
 
-		const collection = await dbService.getCollection('entry')
-		// var entryCursor = await collection.find(criteria, { sort })
+        const collection = await dbService.getCollection('entry')
+        // var entryCursor = await collection.find(criteria, { sort })
 
-        var entryCursor = await collection.find().sort({_id:-1})
+        var entryCursor = await collection.find(criteria).sort({ _id: -1 })
 
-		// if (filterBy.pageIdx !== undefined) {
-		// 	entryCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
-		// }
+        // if (filterBy.pageIdx !== undefined) {
+        // 	entryCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
+        // }
 
-		const entrys = entryCursor.toArray()
-		return entrys
-	} catch (err) {
-		logger.error('cannot find entrys', err)
-		throw err
-	}
+        const entrys = entryCursor.toArray()
+        // console.log('fff', entrys);
+
+        return entrys
+    } catch (err) {
+        logger.error('cannot find entrys', err)
+        throw err
+    }
 }
 
 async function getById(entryId) {
-	try {
+    try {
         const criteria = { _id: ObjectId.createFromHexString(entryId) }
 
-		const collection = await dbService.getCollection('entry')
-		const entry = await collection.findOne(criteria)
-        
-		entry.createdAt = entry._id.getTimestamp()
-		return entry
-	} catch (err) {
-		logger.error(`while finding entry ${entryId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('entry')
+        const entry = await collection.findOne(criteria)
+
+        entry.createdAt = entry._id.getTimestamp()
+        return entry
+    } catch (err) {
+        logger.error(`while finding entry ${entryId}`, err)
+        throw err
+    }
+}
+
+async function getOwner(entryId) {
+    try {
+        const criteria = { _id: ObjectId.createFromHexString(entryId) }
+        logger.info('criteria', criteria)
+        const collection = await dbService.getCollection('entry')
+        const entry = await collection.find(criteria, { projection: { by: 1, _id: 0 } }).toArray()
+
+        logger.info('getOwner', entry)
+
+        return entry[0].by
+    } catch (err) {
+        logger.error(`while finding entry ${entryId}`, err)
+        throw err
+    }
 }
 
 async function remove(entryId) {
     const { loggedinUser } = asyncLocalStorage.getStore()
     const { _id: ownerId } = loggedinUser
 
-	try {
-        const criteria = { 
-            _id: ObjectId.createFromHexString(entryId), 
+    try {
+        const criteria = {
+            _id: ObjectId.createFromHexString(entryId),
         }
         criteria['by._id'] = ownerId
-        
-		const collection = await dbService.getCollection('entry')
-		const res = await collection.deleteOne(criteria)
 
-        if(res.deletedCount === 0) throw('Not your entry')
-		return entryId
-	} catch (err) {
-		logger.error(`cannot remove entry ${entryId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('entry')
+        const res = await collection.deleteOne(criteria)
+
+        if (res.deletedCount === 0) throw 'Not your entry'
+        return entryId
+    } catch (err) {
+        logger.error(`cannot remove entry ${entryId}`, err)
+        throw err
+    }
 }
 
 async function add(entry) {
-	try {
-		const collection = await dbService.getCollection('entry')
-		await collection.insertOne(entry)
+    try {
+        const collection = await dbService.getCollection('entry')
+        await collection.insertOne(entry)
 
-		return entry
-	} catch (err) {
-		logger.error('cannot insert entry', err)
-		throw err
-	}
+        return entry
+    } catch (err) {
+        logger.error('cannot insert entry', err)
+        throw err
+    }
 }
 
-async function update(entry) {
-    const entryToSave = { txt: entry.txt}
+async function updateFull(entry) {
+    const entryToSave = { txt: entry.txt }
 
     try {
         const criteria = { _id: ObjectId.createFromHexString(entry._id) }
 
-		const collection = await dbService.getCollection('entry')
-		await collection.updateOne(criteria, { $set: entryToSave })
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(criteria, { $set: entryToSave })
 
-		return entry
-	} catch (err) {
-		logger.error(`cannot update entry ${entry._id}`, err)
-		throw err
-	}
+        return entry
+    } catch (err) {
+        logger.error(`cannot update entry ${entry._id}`, err)
+        throw err
+    }
+}
+
+async function update(_id, field, val) {
+    try {
+        const criteria = { _id: ObjectId.createFromHexString(_id) }
+        let setCriteria = {}
+
+        setCriteria[field] = val
+
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(criteria, { $set: setCriteria })
+
+        return getById(_id)
+    } catch (err) {
+        logger.error(`cannot update entry ${entry._id}`, err)
+        throw err
+    }
 }
 
 async function addEntryMsg(entryId, msg) {
-	try {
+    try {
         const criteria = { _id: ObjectId.createFromHexString(entryId) }
         msg.id = makeId()
-        
-		const collection = await dbService.getCollection('entry')
-		await collection.updateOne(criteria, { $push: { msgs: msg } })
 
-		return msg
-	} catch (err) {
-		logger.error(`cannot add entry msg ${entryId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(criteria, { $push: { msgs: msg } })
+
+        return msg
+    } catch (err) {
+        logger.error(`cannot add entry msg ${entryId}`, err)
+        throw err
+    }
 }
 
 async function removeEntryMsg(entryId, msgId) {
-	try {
+    try {
         const criteria = { _id: ObjectId.createFromHexString(entryId) }
 
-		const collection = await dbService.getCollection('entry')
-		await collection.updateOne(criteria, { $pull: { msgs: { id: msgId }}})
-        
-		return msgId
-	} catch (err) {
-		logger.error(`cannot add entry msg ${entryId}`, err)
-		throw err
-	}
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(criteria, { $pull: { msgs: { id: msgId } } })
+
+        return msgId
+    } catch (err) {
+        logger.error(`cannot add entry msg ${entryId}`, err)
+        throw err
+    }
 }
 
 function _buildCriteria(filterBy) {
     const criteria = {
-        txt: { $regex: filterBy.txt, $options: 'i' },
-        
+        // txt: { $regex: filterBy.txt, $options: 'i' },
     }
+
+    console.log(filterBy)
+
+    if (filterBy.byId) {
+        criteria['by._id'] = filterBy.byId
+    }
+    if (filterBy.ids) {
+        const ids = filterBy.ids.map(id => ObjectId.createFromHexString(id))
+        criteria._id = { $in: ids }
+    }
+    // db.collection.find({ _id: { $in: [ObjectId("65a12345abcd6789ef012345"), ObjectId("65a67890fghi1234jkl56789")] } })
+    // { _id: ObjectId.createFromHexString(entryId) }
+    console.log(criteria)
 
     return criteria
 }
 
 function _buildSort(filterBy) {
-    if(!filterBy.sortField) return {}
+    if (!filterBy.sortField) return {}
     return { [filterBy.sortField]: filterBy.sortDir }
 }
