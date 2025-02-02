@@ -1,6 +1,6 @@
-import {userService} from './user.service.js'
-import {logger} from '../../services/logger.service.js'
-import {socketService} from '../../services/socket.service.js'
+import { userService } from './user.service.js'
+import { logger } from '../../services/logger.service.js'
+import { socketService } from '../../services/socket.service.js'
 
 export async function getUser(req, res) {
     try {
@@ -36,12 +36,26 @@ export async function deleteUser(req, res) {
 }
 
 export async function updateUser(req, res) {
-    try {
-        const user = req.body
-        const savedUser = await userService.update(user)
-        res.send(savedUser)
-    } catch (err) {
-        logger.error('Failed to update user', err)
-        res.status(400).send({ err: 'Failed to update user' })
+    const { loggedinUser } = req
+    const { _id: userId } = loggedinUser
+    const updUserId = req.params.id
+    const { action, field, val } = req.body
+
+    if (updUserId !== userId) {
+        res.status(403).send('Not a logged in user...')
+        return
+    }
+
+    if (action === 'update') {
+        try {
+            const updatedUser = await userService.update(updUserId, field, val)
+            res.json(updatedUser)
+        } catch (err) {
+            logger.error('Failed to update user', err)
+            res.status(400).send({ err: 'Failed to update user' })
+        }
+    } else {
+        res.status(403).send('Unsupported action')
+        return
     }
 }
