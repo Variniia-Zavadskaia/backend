@@ -10,6 +10,7 @@ export const userService = {
     remove, // Delete (remove user)
     query, // List (of users)
     getByUsername, // Used for Login
+    getSavedEntrys,
 }
 
 async function query(filterBy = {}) {
@@ -92,22 +93,59 @@ async function update(_id, field, val) {
         logger.error(`cannot update user ${_id}`, err)
         throw err
     }
+}
 
-    // try {
-    //     // peek only updatable properties
-    //     const userToSave = {
-    //         _id: ObjectId.createFromHexString(user._id), // needed for the returnd obj
-    //         username: user.username,
-    //         fullname: user.fullname,
-    //         imgUrl: user.imgUrl,
-    //     }
-    //     const collection = await dbService.getCollection('user')
-    //     await collection.updateOne({ _id: userToSave._id }, { $set: userToSave })
-    //     return userToSave
-    // } catch (err) {
-    //     logger.error(`cannot update user ${user._id}`, err)
-    //     throw err
-    // }
+async function getSavedEntrys(_id) {
+    try {
+        const criteria = { _id: ObjectId.createFromHexString(_id) }
+        // logger.info('criteria', criteria)
+        const collection = await dbService.getCollection('user')
+        // const entry = await collection.find(criteria, { projection: { by: 1, _id: 0 } }).toArray()
+
+        logger.info('start')
+        const savedEntrys = await collection.aggregate([
+            {
+              $match: { _id: ObjectId.createFromHexString(_id) }
+            },
+            {
+              $addFields:         
+                {
+                  savedObjectIds: {
+                    $map: {
+                      input: "$savedEntryIds",
+                      as: "entryId",
+                      in: {
+                        $toObjectId: "$$entryId"
+                      }
+                    }
+                  }
+                } // Convert string IDs to ObjectIds
+            },
+            {
+              $lookup:
+                {
+                  from: "entry",
+                  localField: "savedObjectIds",
+                  foreignField: "_id",
+                  as: "savedEntrys"
+                }
+            },
+            {
+              $project:
+                {
+                  savedEntrys: 1,
+                  _id: 0
+                }
+            }
+          ]).toArray()
+
+        logger.info('entryssss', savedEntrys[0].savedEntrys)
+
+        return savedEntrys[0].savedEntrys
+    } catch (err) {
+        logger.error(`while finding entry ${entryId}`, err)
+        throw err
+    }
 }
 
 async function add(user) {

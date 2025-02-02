@@ -59,3 +59,22 @@ export async function updateUser(req, res) {
         return
     }
 }
+
+export async function getSavedEntrys(req, res) {
+    const { loggedinUser } = req
+    const { _id: userId } = loggedinUser
+    const _id = req.params.id
+
+    if (_id !== userId) {
+        res.status(403).send('Not a logged in user...')
+        return
+    }
+
+    try {
+        const savedEntrys = await userService.getSavedEntrys(_id)
+        res.json(savedEntrys)
+    } catch (err) {
+        logger.error('Failed to get saved entrys ', err)
+        res.status(400).send({ err: 'Failed to get saved entrys' })
+    }
+}
