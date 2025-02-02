@@ -133,7 +133,7 @@ async function update(_id, field, val) {
 
         return getById(_id)
     } catch (err) {
-        logger.error(`cannot update entry ${entry._id}`, err)
+        logger.error(`cannot update entry ${_id}`, err)
         throw err
     }
 }
