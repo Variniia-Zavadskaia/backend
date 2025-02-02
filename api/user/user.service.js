@@ -11,6 +11,8 @@ export const userService = {
     query, // List (of users)
     getByUsername, // Used for Login
     getSavedEntrys,
+    follow,
+    unfollow,
 }
 
 async function query(filterBy = {}) {
@@ -97,53 +99,46 @@ async function update(_id, field, val) {
 
 async function getSavedEntrys(_id) {
     try {
-        const criteria = { _id: ObjectId.createFromHexString(_id) }
-        // logger.info('criteria', criteria)
         const collection = await dbService.getCollection('user')
-        // const entry = await collection.find(criteria, { projection: { by: 1, _id: 0 } }).toArray()
 
-        logger.info('start')
-        const savedEntrys = await collection.aggregate([
-            {
-              $match: { _id: ObjectId.createFromHexString(_id) }
-            },
-            {
-              $addFields:         
+        const savedEntrys = await collection
+            .aggregate([
                 {
-                  savedObjectIds: {
-                    $map: {
-                      input: "$savedEntryIds",
-                      as: "entryId",
-                      in: {
-                        $toObjectId: "$$entryId"
-                      }
-                    }
-                  }
-                } // Convert string IDs to ObjectIds
-            },
-            {
-              $lookup:
+                    $match: { _id: ObjectId.createFromHexString(_id) },
+                },
                 {
-                  from: "entry",
-                  localField: "savedObjectIds",
-                  foreignField: "_id",
-                  as: "savedEntrys"
-                }
-            },
-            {
-              $project:
+                    $addFields: {
+                        savedObjectIds: {
+                            $map: {
+                                input: '$savedEntryIds',
+                                as: 'entryId',
+                                in: {
+                                    $toObjectId: '$$entryId',
+                                },
+                            },
+                        },
+                    }, // Convert string IDs to ObjectIds
+                },
                 {
-                  savedEntrys: 1,
-                  _id: 0
-                }
-            }
-          ]).toArray()
-
-        logger.info('entryssss', savedEntrys[0].savedEntrys)
+                    $lookup: {
+                        from: 'entry',
+                        localField: 'savedObjectIds',
+                        foreignField: '_id',
+                        as: 'savedEntrys',
+                    },
+                },
+                {
+                    $project: {
+                        savedEntrys: 1,
+                        _id: 0,
+                    },
+                },
+            ])
+            .toArray()
 
         return savedEntrys[0].savedEntrys
     } catch (err) {
-        logger.error(`while finding entry ${entryId}`, err)
+        logger.error('while finding saved entrys', err)
         throw err
     }
 }
@@ -165,6 +160,65 @@ async function add(user) {
         throw err
     }
 }
+
+async function follow(followerId, followedId, action) {
+    try {
+        const collection = await dbService.getCollection('user')
+        const followingUser = await getById(followerId)
+        const followedUser = await getById(followedId)
+
+        if (action === 'follow') {
+            if (!followedUser.followers) followedUser.followers = []
+            if (!followedUser.followers.some(follower => follower._id === followerId)) {
+                followedUser.followers.push({
+                    _id: followerId,
+                    username: followingUser.username,
+                    imgUrl: followingUser.imgUrl,
+                })
+            }
+
+            if (!followingUser.following) followingUser.following = []
+            if (!followingUser.following.some(followed => followed._id === followedId)) {
+                followingUser.following.push({
+                    _id: followedId,
+                    username: followedUser.username,
+                    imgUrl: followedUser.imgUrl,
+                })
+            }
+        } else {
+            if (followedUser.followers) {
+                followedUser.followers = followedUser.followers.filter(follower => follower._id !== followerId)
+            }
+            if (followingUser.following) {
+                followingUser.following = followingUser.following.filter(followed => followed._id !== followedId)
+            }
+        }
+
+        // logger.info('users:', followingUser, followedUser)
+
+       await collection.bulkWrite([
+            {
+                updateOne: {
+                    filter: { _id: ObjectId.createFromHexString(followerId) },
+                    update: { $set: { 'following': followingUser.following } },
+                },
+            },
+            {
+                updateOne: {
+                    filter: { _id: ObjectId.createFromHexString(followedId) },
+                    update: { $set: { 'followers': followedUser.followers } },
+                },
+            },
+        ])
+
+        return { followingUser, followedUser }
+    } catch (err) {
+        logger.error('cannot follow user', err)
+        throw err
+    }
+}
+
+async function unfollow(followerId, followedId) {}
 
 function _buildCriteria(filterBy) {
     const criteria = {}

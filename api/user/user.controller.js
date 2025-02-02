@@ -39,7 +39,7 @@ export async function updateUser(req, res) {
     const { loggedinUser } = req
     const { _id: userId } = loggedinUser
     const updUserId = req.params.id
-    const { action, field, val } = req.body
+    const { action } = req.body
 
     if (updUserId !== userId) {
         res.status(403).send('Not a logged in user...')
@@ -47,6 +47,7 @@ export async function updateUser(req, res) {
     }
 
     if (action === 'update') {
+        const { field, val } = req.body
         try {
             const updatedUser = await userService.update(updUserId, field, val)
             res.json(updatedUser)
@@ -54,7 +55,19 @@ export async function updateUser(req, res) {
             logger.error('Failed to update user', err)
             res.status(400).send({ err: 'Failed to update user' })
         }
-    } else {
+    } else if ( action === 'follow' || action === 'unfollow') {
+        const followerId = updUserId
+        const {followedId} = req.body
+        
+        try {
+            const {followedUser, followingUser} = await userService.follow(followerId, followedId, action)
+            res.json({followedUser, followingUser})
+        } catch (err) {
+            logger.error('Failed to ' + action + ' user', err)
+            res.status(400).send({ err: 'Failed to ' + action + ' user' })
+        }
+    }
+    else {
         res.status(403).send('Unsupported action')
         return
     }
