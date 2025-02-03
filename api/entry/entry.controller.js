@@ -124,6 +124,51 @@ export async function removeEntry(req, res) {
 	}
 }
 
+export async function addEntryComment(req, res){
+    const _id = req.params.id
+    const {txt} = req.body
+
+    try {
+		const updatedEntry = await entryService.addComment(_id, txt)
+
+		res.send(updatedEntry)
+	} catch (err) {
+		logger.error('Failed to add comment', err)
+		res.status(400).send({ err: 'Failed to add comment' })
+	}
+}
+
+export async function removeEntryComment(req, res){
+    const {id: _id, commentId} = req.params
+
+    try {
+		const updatedEntry = await entryService.removeComment(_id, commentId)
+
+		res.send(updatedEntry)
+	} catch (err) {
+		logger.error('Failed to remove comment', err)
+		res.status(400).send({ err: 'Failed to remove comment' })
+	}
+}
+
+export async function updateEntryComment(req, res){
+    const {id: _id, commentId} = req.params
+    const { action, field, val } = req.body
+    
+    if (action !== 'update') {
+        res.status(400).send({ err: 'Prohibited action' })
+    }
+
+    try {
+		const updatedEntry = await entryService.updateComment(_id, commentId, field, val)
+
+		res.send(updatedEntry)
+	} catch (err) {
+		logger.error('Failed to update comment', err)
+		res.status(400).send({ err: 'Failed to update comment' })
+	}
+}
+
 export async function addEntryMsg(req, res) {
 	const { loggedinUser } = req
 

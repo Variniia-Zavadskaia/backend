@@ -3,7 +3,7 @@ import express from 'express'
 import { requireAuth } from '../../middlewares/requireAuth.middleware.js'
 import { log } from '../../middlewares/logger.middleware.js'
 
-import { getEntrys, getEntryById, addEntry, updateEntry, removeEntry, addEntryMsg, removeEntryMsg } from './entry.controller.js'
+import { getEntrys, getEntryById, addEntry, updateEntry, removeEntry, addEntryComment, removeEntryComment, updateEntryComment } from './entry.controller.js'
 
 const router = express.Router()
 
@@ -14,11 +14,10 @@ router.get('/', log, getEntrys)
 router.get('/:id', log, getEntryById)
 router.post('/', log, requireAuth, addEntry)
 router.put('/:id', requireAuth, updateEntry)
-// router.put('/:id/update', requireAuth, updateEntry)
 router.delete('/:id', requireAuth, removeEntry)
-// router.delete('/:id', requireAuth, requireAdmin, removeEntry)
 
-router.post('/:id/msg', requireAuth, addEntryMsg)
-router.delete('/:id/msg/:msgId', requireAuth, removeEntryMsg)
+router.post('/:id/comment', requireAuth, addEntryComment)
+router.put('/:id/comment/:commentId', requireAuth, updateEntryComment)
+router.delete('/:id/comment/:commentId', requireAuth, removeEntryComment)
 
 export const entryRoutes = router

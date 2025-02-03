@@ -15,6 +15,9 @@ export const entryService = {
     update,
     addEntryMsg,
     removeEntryMsg,
+    addComment,
+    removeComment,
+    updateComment
 }
 
 async function query(filterBy = { txt: '' }) {
@@ -163,6 +166,82 @@ async function removeEntryMsg(entryId, msgId) {
         return msgId
     } catch (err) {
         logger.error(`cannot add entry msg ${entryId}`, err)
+        throw err
+    }
+}
+
+async function addComment(_id, txt) {
+    const { loggedinUser } = asyncLocalStorage.getStore()
+    const newComment = {
+        id: makeId(),
+        txt,
+        by: {
+            _id: loggedinUser._id,
+            fullname: loggedinUser.fullname,
+            username: loggedinUser.username,
+            imgUrl: loggedinUser.imgUrl,
+        },
+        likedBy: [],
+        date: new Date(),
+    }
+
+    try {
+        const criteria = { _id: ObjectId.createFromHexString(_id) }
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(criteria, { $push: { comments: { $each: [newComment], $position: 0 } } })
+
+        return getById(_id)
+    } catch (err) {
+        logger.error(`cannot add comment to entry ${_id}`, err)
+        throw err
+    }
+}
+
+async function updateComment(entryId, commentId, field, val) {
+    if (field !== 'likedBy') {
+        throw new Error('Prohibited change')
+    }
+
+    try {
+        const entry = await getById(entryId)
+
+        let updatedComment
+
+        entry.comments = entry.comments.map(comment => {
+            if (comment.id !== commentId) return comment
+            
+            comment[field] = val
+
+            updatedComment = {...comment}
+
+            return comment
+        })
+
+        // logger.info('updateComment entry', entry)
+
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(
+            { _id: ObjectId.createFromHexString(entryId), "comments.id": commentId }, 
+            { $set: { "comments.$": updatedComment } }
+          );
+
+          return entry
+
+    } catch (err) {
+        logger.error(`cannot update comment in entry ${entryId}`, err)
+        throw err
+    }
+}
+
+async function removeComment(_id, commentId) {
+    try {
+        const criteria = { _id: ObjectId.createFromHexString(_id) }
+        const collection = await dbService.getCollection('entry')
+        await collection.updateOne(criteria, { $pull: { comments: { id: commentId } } })
+
+        return getById(_id)
+    } catch (err) {
+        logger.error(`cannot add comment to entry ${_id}`, err)
         throw err
     }
 }
