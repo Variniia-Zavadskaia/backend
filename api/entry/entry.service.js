@@ -34,8 +34,10 @@ async function query(filterBy = { txt: '' }) {
         // 	entryCursor.skip(filterBy.pageIdx * PAGE_SIZE).limit(PAGE_SIZE)
         // }
 
-        const entrys = entryCursor.toArray()
+        const entrys = await entryCursor.toArray()
         // console.log('fff', entrys);
+
+        entrys.forEach(entry => {entry.date = entry._id.getTimestamp() });
 
         return entrys
     } catch (err) {
@@ -51,7 +53,7 @@ async function getById(entryId) {
         const collection = await dbService.getCollection('entry')
         const entry = await collection.findOne(criteria)
 
-        entry.createdAt = entry._id.getTimestamp()
+        entry.date = entry._id.getTimestamp()
         return entry
     } catch (err) {
         logger.error(`while finding entry ${entryId}`, err)
