@@ -91,3 +91,24 @@ export async function getSavedEntrys(req, res) {
         res.status(400).send({ err: 'Failed to get saved entrys' })
     }
 }
+
+export async function getSuggestedUsers(req, res) {
+    const { loggedinUser } = req
+    const { _id: userId } = loggedinUser
+    const _id = req.params.id
+
+    console.log('hui');
+
+    if (_id !== userId) {
+        res.status(403).send('Not a logged in user...')
+        return
+    }
+
+    try {
+        const suggestedUsers = await userService.suggestedUsers(_id)
+        res.json(suggestedUsers)
+    } catch (err) {
+        logger.error('Failed to get suggested users ', err)
+        res.status(400).send({ err: 'Failed to get suggested users' })
+    }
+}

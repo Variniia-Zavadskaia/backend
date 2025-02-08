@@ -12,7 +12,7 @@ export async function getEntrys(req, res) {
             sortDir: req.query.sortDir || -1,
 		}
 		const entrys = await entryService.query(filterBy)
-        console.log(entrys);
+        // console.log(entrys);
         
 		res.json(entrys)
 	} catch (err) {
@@ -38,7 +38,7 @@ export async function addEntry(req, res) {
 	try {
 		entry.by = loggedinUser
 
-        console.log(entry.by);
+        // console.log(entry.by);
         
 
 		const addedEntry = await entryService.add(entry)
@@ -54,7 +54,7 @@ export async function updateEntry(req, res) {
     const action = updReq.action
     const { _id: userId } = loggedinUser
 
-    logger.info(updReq, action);
+    // logger.info(updReq, action);
 
     if (action === 'full') {
         const entry = updReq.entry
@@ -89,7 +89,7 @@ export async function updateEntry(req, res) {
         if (onlyOwnerChange.includes(field)) {
             const owner = await entryService.getOwner(entryId)
 
-            logger.info('owner:', owner);
+            // logger.info('owner:', owner);
 
             if( owner._id !== userId) {
                 res.status(403).send('Not your entry...')

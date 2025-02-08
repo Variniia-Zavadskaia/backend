@@ -13,6 +13,7 @@ export const userService = {
     getSavedEntrys,
     follow,
     unfollow,
+    suggestedUsers
 }
 
 async function query(filterBy = {}) {
@@ -161,6 +162,43 @@ async function add(user) {
     }
 }
 
+async function suggestedUsers(userId) {
+    try {
+        var criteria = { _id: ObjectId.createFromHexString(userId) }
+
+        const collection = await dbService.getCollection('user')
+        let { following } = await collection.findOne(criteria, { following: 1 })
+
+        // console.log(following);
+
+        following = following.map(followed => followed._id)
+
+        following.push(userId)
+
+        // console.log(following);
+
+        
+
+        const suggestions = await collection.aggregate([
+            {
+                $match: {
+                    _id: { $nin: following },
+                },
+            },
+            {
+                $sample: { size: 3 },
+            },
+        ]).toArray()
+
+        
+
+        return suggestions
+    } catch (err) {
+        logger.error('cannot get suggested users', err)
+        throw err
+    }
+}
+
 async function follow(followerId, followedId, action) {
     try {
         const collection = await dbService.getCollection('user')
@@ -196,17 +234,17 @@ async function follow(followerId, followedId, action) {
 
         // logger.info('users:', followingUser, followedUser)
 
-       await collection.bulkWrite([
+        await collection.bulkWrite([
             {
                 updateOne: {
                     filter: { _id: ObjectId.createFromHexString(followerId) },
-                    update: { $set: { 'following': followingUser.following } },
+                    update: { $set: { following: followingUser.following } },
                 },
             },
             {
                 updateOne: {
                     filter: { _id: ObjectId.createFromHexString(followedId) },
-                    update: { $set: { 'followers': followedUser.followers } },
+                    update: { $set: { followers: followedUser.followers } },
                 },
             },
         ])

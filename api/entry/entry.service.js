@@ -64,11 +64,11 @@ async function getById(entryId) {
 async function getOwner(entryId) {
     try {
         const criteria = { _id: ObjectId.createFromHexString(entryId) }
-        logger.info('criteria', criteria)
+        // logger.info('criteria', criteria)
         const collection = await dbService.getCollection('entry')
         const entry = await collection.find(criteria, { projection: { by: 1, _id: 0 } }).toArray()
 
-        logger.info('getOwner', entry)
+        // logger.info('getOwner', entry)
 
         return entry[0].by
     } catch (err) {
@@ -253,7 +253,7 @@ function _buildCriteria(filterBy) {
         // txt: { $regex: filterBy.txt, $options: 'i' },
     }
 
-    console.log(filterBy)
+    // console.log(filterBy)
 
     if (filterBy.byId) {
         criteria['by._id'] = filterBy.byId
@@ -264,7 +264,7 @@ function _buildCriteria(filterBy) {
     }
     // db.collection.find({ _id: { $in: [ObjectId("65a12345abcd6789ef012345"), ObjectId("65a67890fghi1234jkl56789")] } })
     // { _id: ObjectId.createFromHexString(entryId) }
-    console.log(criteria)
+    // console.log(criteria)
 
     return criteria
 }
