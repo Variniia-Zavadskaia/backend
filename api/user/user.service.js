@@ -171,13 +171,11 @@ async function suggestedUsers(userId) {
 
         // console.log(following);
 
-        following = following.map(followed => followed._id)
+        following = following.map(followed => ObjectId.createFromHexString(followed._id))
 
-        following.push(userId)
+        following.push(ObjectId.createFromHexString(userId))
 
-        // console.log(following);
-
-        
+        logger.info('ddd', following);
 
         const suggestions = await collection.aggregate([
             {
@@ -188,8 +186,16 @@ async function suggestedUsers(userId) {
             {
                 $sample: { size: 3 },
             },
+            {
+                $project: {
+                    username: 1,
+                    fullname: 1,
+                    imgUrl: 1,
+                },
+            },
         ]).toArray()
 
+        logger.info('hhhh', suggestions);
         
 
         return suggestions
