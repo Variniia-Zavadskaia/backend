@@ -175,8 +175,6 @@ async function suggestedUsers(userId) {
 
         following.push(ObjectId.createFromHexString(userId))
 
-        logger.info('ddd', following);
-
         const suggestions = await collection.aggregate([
             {
                 $match: {
@@ -195,7 +193,7 @@ async function suggestedUsers(userId) {
             },
         ]).toArray()
 
-        logger.info('hhhh', suggestions);
+        // logger.info('hhhh', suggestions);
         
 
         return suggestions
