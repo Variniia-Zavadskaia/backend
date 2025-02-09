@@ -97,8 +97,6 @@ export async function getSuggestedUsers(req, res) {
     const { _id: userId } = loggedinUser
     const _id = req.params.id
 
-    // console.log('hui');
-
     if (_id !== userId) {
         res.status(403).send('Not a logged in user...')
         return
