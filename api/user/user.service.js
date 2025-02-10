@@ -13,7 +13,7 @@ export const userService = {
     getSavedEntrys,
     follow,
     unfollow,
-    suggestedUsers
+    suggestedUsers,
 }
 
 async function query(filterBy = {}) {
@@ -129,6 +129,39 @@ async function getSavedEntrys(_id) {
                     },
                 },
                 {
+                    $addFields: {
+                        savedEntrys: {
+                            $map: {
+                                input: '$savedObjectIds',
+                                as: 'id',
+                                in: {
+                                    $arrayElemAt: [
+                                        {
+                                            $filter: {
+                                                input: '$savedEntrys',
+                                                as: 'entry',
+                                                cond: { $eq: ['$$entry._id', '$$id'] },
+                                            },
+                                        },
+                                        0,
+                                    ],
+                                },
+                            },
+                        },
+                    },
+                },
+                {
+                  $addFields: {
+                    savedEntrys: {
+                      $filter: {
+                        input: '$savedEntrys',
+                        as: 'entry',
+                        cond: { $ne: ['$$entry', null] },  // This removes null values
+                      },
+                    },
+                  },
+                },
+                {
                     $project: {
                         savedEntrys: 1,
                         _id: 0,
@@ -175,26 +208,27 @@ async function suggestedUsers(userId) {
 
         following.push(ObjectId.createFromHexString(userId))
 
-        const suggestions = await collection.aggregate([
-            {
-                $match: {
-                    _id: { $nin: following },
+        const suggestions = await collection
+            .aggregate([
+                {
+                    $match: {
+                        _id: { $nin: following },
+                    },
                 },
-            },
-            {
-                $sample: { size: 5 },
-            },
-            {
-                $project: {
-                    username: 1,
-                    fullname: 1,
-                    imgUrl: 1,
+                {
+                    $sample: { size: 5 },
                 },
-            },
-        ]).toArray()
+                {
+                    $project: {
+                        username: 1,
+                        fullname: 1,
+                        imgUrl: 1,
+                    },
+                },
+            ])
+            .toArray()
 
         // logger.info('hhhh', suggestions);
-        
 
         return suggestions
     } catch (err) {
