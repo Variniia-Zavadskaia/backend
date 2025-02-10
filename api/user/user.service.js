@@ -182,7 +182,7 @@ async function suggestedUsers(userId) {
                 },
             },
             {
-                $sample: { size: 3 },
+                $sample: { size: 5 },
             },
             {
                 $project: {
